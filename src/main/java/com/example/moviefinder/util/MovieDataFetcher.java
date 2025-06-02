@@ -16,25 +16,27 @@ import java.util.concurrent.*;
 public class MovieDataFetcher {
 
     @Value("${omdb.api.key}")
-    private String omdbApiKey;
+    private String omdbApiKey; // OMDB Key safely put in the application.properties
 
     @Value("${tmdb.api.key}")
-    private String tmdbApiKey;
+    private String tmdbApiKey; // TMDB Key safely put in the application.properties
 
     private final ExecutorService executor = Executors.newFixedThreadPool(4);
 
     public Movie fetchAndBuildMovie(String titleInput) throws Exception {
-        Future<JSONObject> omdbFuture = executor.submit(() -> fetchOmdbData(titleInput));
-        Future<JSONObject> tmdbFuture = executor.submit(() -> fetchTmdbSearch(titleInput));
+        Future<JSONObject> omdbFuture = executor.submit(() -> fetchOmdbData(titleInput)); // Fetching OMDB data based on the title 
+        Future<JSONObject> tmdbFuture = executor.submit(() -> fetchTmdbSearch(titleInput)); // Fetching TMDB data based on the title
 
         JSONObject omdbData = omdbFuture.get();
         JSONObject tmdbSearchData = tmdbFuture.get();
 
         if (omdbData == null || tmdbSearchData == null || tmdbSearchData.getJSONArray("results").isEmpty()) {
-            throw new IllegalStateException("Failed to fetch movie data.");
+            throw new IllegalStateException("Failed to fetch movie data."); // Throwing Exception when no data can be found for the given title
         }
 
         JSONObject tmdbResult = tmdbSearchData.getJSONArray("results").getJSONObject(0);
+        
+        // Fetching relevant data from the TMDB API
         int tmdbId = tmdbResult.getInt("id");
 
         Future<JSONObject> imagesFuture = executor.submit(() -> fetchTmdbData(tmdbId, "images"));
@@ -46,15 +48,17 @@ public class MovieDataFetcher {
         JSONObject keywords = keywordsFuture.get();
         JSONObject similar = similarFuture.get();
         JSONObject providers = providersFuture.get();
-
+        
+        // Fetching relevant data from the OMDB API
         List<String> imagePaths = downloadImages(images, omdbData.getString("Title"));
 
         // Extract first 3 actors
         String[] actorsArray = omdbData.optString("Actors", "").split(",");
         String actors = String.join(", ",
                 Arrays.copyOfRange(actorsArray, 0, Math.min(3, actorsArray.length)));
-
-        return Movie.builder()
+                
+        // Build a movie that can be added to the database        
+        return Movie.builder() // 
                 .title(omdbData.optString("Title"))
                 .year(omdbData.optString("Year"))
                 .rated(omdbData.optString("Rated"))
@@ -81,19 +85,19 @@ public class MovieDataFetcher {
                 .build();
     }
 
-    private JSONObject fetchOmdbData(String title) throws Exception {
+    private JSONObject fetchOmdbData(String title) throws Exception { // OMDB fetching code
         String query = "t=" + URLEncoder.encode(title, "UTF-8") + "&apikey=" + omdbApiKey;
         String json = readFromUrl("http", "www.omdbapi.com", "/", query);
         return new JSONObject(json);
     }
 
-    private JSONObject fetchTmdbSearch(String title) throws Exception {
+    private JSONObject fetchTmdbSearch(String title) throws Exception { // TMDB search code
         String query = "api_key=" + tmdbApiKey + "&query=" + URLEncoder.encode(title, "UTF-8");
         String json = readFromUrl("https", "api.themoviedb.org", "/3/search/movie", query);
         return new JSONObject(json);
     }
 
-    private JSONObject fetchTmdbData(int movieId, String endpoint) throws Exception {
+    private JSONObject fetchTmdbData(int movieId, String endpoint) throws Exception { // TMDB fetching code
         String query = "api_key=" + tmdbApiKey;
         String path = "/3/movie/" + movieId + "/" + endpoint;
         String json = readFromUrl("https", "api.themoviedb.org", path, query);
@@ -114,6 +118,7 @@ public class MovieDataFetcher {
         return sb.toString();
     }
 
+    // Code for downloading three images and downloading them to a local file
     private List<String> downloadImages(JSONObject imageData, String title) {
         List<String> paths = new ArrayList<>();
         try {
@@ -151,12 +156,13 @@ public class MovieDataFetcher {
     private String flattenArray(JSONArray array, String key) {
         if (array == null) return "";
         List<String> values = new ArrayList<>();
-        for (int i = 0; i < array.length(); i++) {
+        for (int i = 0; i < Math.min(3, array.length()); i++) {  // Only first 3 entries
             values.add(array.getJSONObject(i).optString(key));
         }
         return String.join(", ", values);
     }
 
+    // extracting the watch providers for movies in the US
     private String extractWatchProviders(JSONObject providerData) {
         JSONObject results = providerData.optJSONObject("results");
         if (results != null && results.has("US")) {
