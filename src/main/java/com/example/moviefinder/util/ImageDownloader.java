@@ -12,9 +12,21 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
 
+/**
+ * Utility class responsible for downloading images from TMDb using the
+ * image file paths provided in a JSON response.
+ */
 @Component
 public class ImageDownloader {
 
+    /**
+     * Downloads up to three images from the provided TMDb image data and stores them
+     * in a local folder named after the movie title.
+     *
+     * @param imageData JSON object containing an array of "backdrops" from TMDb
+     * @param title     the title of the movie (used to name the folder)
+     * @return a list of relative paths where the images were saved
+     */
     public List<String> downloadImages(JSONObject imageData, String title) {
         JSONArray backdrops = imageData.optJSONArray("backdrops");
         if (backdrops == null || backdrops.isEmpty()) return List.of();
@@ -26,6 +38,7 @@ public class ImageDownloader {
         try {
             Files.createDirectories(folderPath);
 
+            // Download up to 3 images
             IntStream.range(0, Math.min(3, backdrops.length()))
                     .mapToObj(i -> backdrops.getJSONObject(i).optString("file_path"))
                     .filter(path -> !path.isEmpty())
@@ -47,10 +60,17 @@ public class ImageDownloader {
         return imagePaths;
     }
 
+    /**
+     * Downloads the content from the given URL and writes it to the specified file.
+     *
+     * @param url        the source URL of the image
+     * @param outputPath the path where the image should be saved
+     * @throws IOException if the download or write operation fails
+     */
     private void downloadToFile(URL url, Path outputPath) throws IOException {
         try (InputStream in = new BufferedInputStream(url.openStream());
              OutputStream out = new FileOutputStream(outputPath.toFile())) {
-            in.transferTo(out); // Java 9+ API simplifies the copy
+            in.transferTo(out); // Java 9+ simplifies stream copying
         }
     }
 }

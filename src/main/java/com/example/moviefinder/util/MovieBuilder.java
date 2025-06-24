@@ -9,9 +9,25 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+/**
+ * Utility class responsible for constructing a {@link Movie} entity by aggregating
+ * and transforming data from OMDb and TMDb APIs.
+ */
 @Component
 public class MovieBuilder {
 
+    /**
+     * Constructs a {@link Movie} object using information from OMDb and TMDb.
+     *
+     * @param omdbData        JSON object containing data from the OMDb API
+     * @param tmdbSearchResult JSON object for the initial TMDb search result
+     * @param images          JSON object containing TMDb image data
+     * @param keywords        JSON object containing TMDb keywords
+     * @param similar         JSON object containing TMDb similar movies
+     * @param providers       JSON object containing TMDb watch providers
+     * @param imagePaths      List of local paths where images were saved
+     * @return A fully built {@link Movie} instance
+     */
     public Movie buildMovie(JSONObject omdbData, JSONObject tmdbSearchResult, JSONObject images,
                             JSONObject keywords, JSONObject similar, JSONObject providers, List<String> imagePaths) {
 
@@ -39,6 +55,12 @@ public class MovieBuilder {
                 .build();
     }
 
+    /**
+     * Extracts up to 3 actor names from the comma-separated actor string.
+     *
+     * @param actorString the string of actors from OMDb
+     * @return formatted string of up to 3 actors
+     */
     private String parseActors(String actorString) {
         String[] actorsArray = actorString.split(",");
         return IntStream.range(0, Math.min(3, actorsArray.length))
@@ -46,14 +68,33 @@ public class MovieBuilder {
                 .collect(Collectors.joining(", "));
     }
 
+    /**
+     * Extracts keywords from the TMDb JSON object.
+     *
+     * @param keywords JSON object containing the "keywords" array
+     * @return comma-separated list of keyword names
+     */
     private String extractKeywords(JSONObject keywords) {
         return flattenJsonArray(keywords.optJSONArray("keywords"), "name");
     }
 
+    /**
+     * Extracts similar movie titles from the TMDb JSON object.
+     *
+     * @param similar JSON object containing the "results" array
+     * @return comma-separated list of similar movie titles
+     */
     private String extractSimilarMovies(JSONObject similar) {
         return flattenJsonArray(similar.optJSONArray("results"), "title");
     }
 
+    /**
+     * Converts a JSON array into a comma-separated string using the given key.
+     *
+     * @param array the JSONArray to flatten
+     * @param key   the key to extract values from each object
+     * @return comma-separated string of extracted values
+     */
     private String flattenJsonArray(JSONArray array, String key) {
         if (array == null) return "";
         return IntStream.range(0, Math.min(3, array.length()))
@@ -61,6 +102,13 @@ public class MovieBuilder {
                 .collect(Collectors.joining(", "));
     }
 
+    /**
+     * Extracts watch provider names from the TMDb JSON object.
+     * Focuses on "US" region and "flatrate" category.
+     *
+     * @param providerData JSON object containing watch provider info
+     * @return comma-separated list of provider names
+     */
     private String extractWatchProviders(JSONObject providerData) {
         JSONObject results = providerData.optJSONObject("results");
         if (results != null && results.has("US")) {
