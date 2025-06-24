@@ -20,9 +20,12 @@ public class MovieService {
     private MovieDataFetcher movieDataFetcher;
 
     // Adding a movie based on the title using the fetchAndBuild function
-    public Movie addMovieByTitle(String title) throws Exception {
-        Movie movie = movieDataFetcher.fetchAndBuildMovie(title);
+    public Movie addMovieByTitle(String title) {
+        Movie movie = movieDataFetcher.fetchAndBuildMovie(title); // may throw custom runtime exceptions
         return repository.save(movie);
+    }
+    public Optional<Movie> getMovieById(Long id) {
+        return repository.findById(id);
     }
 
     // Getting all movies in the database (repositories)

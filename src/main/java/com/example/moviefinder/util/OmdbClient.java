@@ -1,12 +1,11 @@
 package com.example.moviefinder.util;
 
+import com.example.moviefinder.exceptions.OmdbApiException;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
-
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 
 @Component
 public class OmdbClient {
@@ -20,10 +19,19 @@ public class OmdbClient {
         this.restTemplate = restTemplate;
     }
 
-    public JSONObject fetchMovieData(String title) throws Exception {
-        String encodedTitle = URLEncoder.encode(title, StandardCharsets.UTF_8);
-        String url = "http://www.omdbapi.com/?t=" + encodedTitle + "&apikey=" + omdbApiKey;
-        String response = restTemplate.getForObject(url, String.class);
-        return new JSONObject(response);
+    public JSONObject fetchMovieData(String title) {
+        try {
+            String url = "http://www.omdbapi.com/?t=" + title + "&apikey=" + omdbApiKey;
+            String response = restTemplate.getForObject(url, String.class);
+            JSONObject json = new JSONObject(response);
+
+            if (!json.optString("Response", "True").equalsIgnoreCase("True")) {
+                throw new OmdbApiException("OMDb error: " + json.optString("Error", "Unknown error"));
+            }
+
+            return json;
+        } catch (RestClientException e) {
+            throw new OmdbApiException("Failed to fetch data from OMDb for title: " + title, e);
+        }
     }
 }

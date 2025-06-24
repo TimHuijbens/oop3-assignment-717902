@@ -15,19 +15,22 @@ public class MovieController {
     private MovieService movieService;
 
     @PostMapping
-    public ResponseEntity<Movie> addMovie(@RequestParam String title) {
-        try {
+        public ResponseEntity<Movie> addMovie(@RequestParam String title) {
             Movie movie = movieService.addMovieByTitle(title);
             return ResponseEntity.ok(movie);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
         }
-    }
 
     @GetMapping
     public Page<Movie> getMovies(@RequestParam(defaultValue = "0") int page,
                                  @RequestParam(defaultValue = "10") int size) {
         return movieService.getAllMovies(PageRequest.of(page, size));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Movie> getMovieById(@PathVariable Long id) {
+        return movieService.getMovieById(id)
+            .map(ResponseEntity::ok)
+            .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping("/{id}/watched")
