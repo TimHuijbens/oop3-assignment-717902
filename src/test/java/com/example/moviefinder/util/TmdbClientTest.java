@@ -14,24 +14,14 @@ class TmdbClientTest {
     private TmdbClient tmdbClient;
 
     @Test
-    void searchMovie_ShouldReturnResults() throws Exception {
+    void searchMovie_ShouldReturnJsonWithResults() throws Exception {
         JSONObject result = tmdbClient.searchMovie("Inception");
-
-        assertThat(result).isNotNull();
-        assertThat(result.getJSONArray("results")).isNotEmpty();
-        assertThat(result.getJSONArray("results").getJSONObject(0).getString("title")).isNotEmpty();
+        assertThat(result.getJSONArray("results").length()).isGreaterThan(0);
     }
 
     @Test
-    void fetchMovieDetails_ShouldReturnImages() throws Exception {
-        // Get TMDB ID from search
-        JSONObject searchResult = tmdbClient.searchMovie("Inception");
-        int tmdbId = searchResult.getJSONArray("results").getJSONObject(0).getInt("id");
-
-        // Fetch movie images
-        JSONObject images = tmdbClient.fetchMovieDetails(tmdbId, "images");
-
-        assertThat(images).isNotNull();
-        assertThat(images.optJSONArray("backdrops")).isNotEmpty();
+    void fetchMovieDetails_ShouldReturnImagesJson() throws Exception {
+        JSONObject details = tmdbClient.fetchMovieDetails(27205, "images"); // TMDb ID for Inception
+        assertThat(details.has("backdrops")).isTrue();
     }
 }

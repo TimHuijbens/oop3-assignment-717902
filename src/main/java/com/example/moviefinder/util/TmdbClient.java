@@ -3,11 +3,11 @@ package com.example.moviefinder.util;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
+import org.springframework.web.client.RestTemplate;
+
 import java.net.URI;
-import java.net.URL;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 @Component
 public class TmdbClient {
@@ -15,28 +15,22 @@ public class TmdbClient {
     @Value("${tmdb.api.key}")
     private String tmdbApiKey;
 
+    private final RestTemplate restTemplate;
+
+    public TmdbClient(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
+    }
+
     public JSONObject searchMovie(String title) throws Exception {
-        String query = "api_key=" + tmdbApiKey + "&query=" + URLEncoder.encode(title, "UTF-8");
-        return new JSONObject(readFromUrl("https", "api.themoviedb.org", "/3/search/movie", query));
+        String encodedTitle = URLEncoder.encode(title, StandardCharsets.UTF_8);
+        String url = "https://api.themoviedb.org/3/search/movie?api_key=" + tmdbApiKey + "&query=" + encodedTitle;
+        String response = restTemplate.getForObject(new URI(url), String.class);
+        return new JSONObject(response);
     }
 
     public JSONObject fetchMovieDetails(int movieId, String endpoint) throws Exception {
-        String query = "api_key=" + tmdbApiKey;
-        String path = "/3/movie/" + movieId + "/" + endpoint;
-        return new JSONObject(readFromUrl("https", "api.themoviedb.org", path, query));
-    }
-
-    private String readFromUrl(String scheme, String host, String path, String query) throws Exception {
-        URI uri = new URI(scheme, host, path, query, null);
-        URL url = uri.toURL();
-
-        StringBuilder sb = new StringBuilder();
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                sb.append(line);
-            }
-        }
-        return sb.toString();
+        String url = "https://api.themoviedb.org/3/movie/" + movieId + "/" + endpoint + "?api_key=" + tmdbApiKey;
+        String response = restTemplate.getForObject(new URI(url), String.class);
+        return new JSONObject(response);
     }
 }

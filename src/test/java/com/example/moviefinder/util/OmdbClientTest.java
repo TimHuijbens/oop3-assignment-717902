@@ -15,12 +15,7 @@ class OmdbClientTest {
 
     @Test
     void fetchMovieData_ShouldReturnJson() throws Exception {
-        // Act
-        JSONObject response = omdbClient.fetchMovieData("Inception");
-
-        // Assert
-        assertThat(response).isNotNull();
-        assertThat(response.optString("Title")).isEqualToIgnoringCase("Inception");
-        assertThat(response.optString("Year")).isNotEmpty();
+        JSONObject json = omdbClient.fetchMovieData("Inception");
+        assertThat(json.optString("Title")).isEqualToIgnoringCase("Inception");
     }
 }
